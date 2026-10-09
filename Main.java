@@ -19,8 +19,8 @@ import javax.swing.JLabel;
 import javax.swing.SwingUtilities;
 
 public class Main {
-    int width;
-    int height;
+    int widt = 1800;
+    int height = 1000;
 
     float[] currentGrid;
     float[] previousGrid;
@@ -30,24 +30,16 @@ public class Main {
 
     JLabel label;
 
-    final float max_power = 16f;
-    final float min_power = -16f;
+    final float maxPower = 16f;
 
     boolean hideHud = false;
 
-    float damping;
+    float damping = 0.99f;
 
     long lastTime = System.nanoTime();
     double fps = 0;
 
-    float wavePower;
-
-    public Main() {
-        width = 1800;
-        height = 1000;
-        damping = 0.99f;
-        wavePower = 1f;
-    }
+    float wavePower = 3f;
 
     public void start() {
         
@@ -105,10 +97,10 @@ public class Main {
                     System.exit(0);
                 } else if (e.getKeyCode() == KeyEvent.VK_UP) {
                     wavePower += 0.5;
-                    if (wavePower > max_power) wavePower = max_power;
+                    if (wavePower > maxPower) wavePower = maxPower;
                 } else if (e.getKeyCode() == KeyEvent.VK_DOWN) {
                     wavePower -= 0.5;
-                    if (wavePower < min_power) wavePower = min_power;
+                    if (wavePower < -maxPower) wavePower = -maxPower;
                 } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                     Arrays.fill(currentGrid, 0);
                     Arrays.fill(previousGrid, 0);
@@ -218,6 +210,7 @@ public class Main {
                     float nextValue = (neighborSum / 2.0f) - currentGrid[x + rowOffset];
 
                     nextValue *= damping;
+                    nextValue = Math.max(-maxPower, Math.min(maxPower, nextValue));
                     currentGrid[x + rowOffset] = nextValue;
                 }
             }
@@ -235,16 +228,17 @@ public class Main {
                     g = 100;
                     b = 100;
                 } else {
-                    float amplitude = currentGrid[idx];
-                    r = 0;
-                    g = 0;
-                    b = 0;
-
-                    int colorValue = (int) (Math.abs(amplitude) * 255);
-                    colorValue = Math.min(255, Math.max(0, colorValue));
-                    r = colorValue;
-                    g = colorValue;
-                    b = colorValue;
+                    float normalized = Math.max(-1.0f, Math.min(1.0f, currentGrid[idx] / maxPower));
+                    if (normalized >= 0) {
+                        r = 0;
+                        g = (int) (normalized * 255);
+                        b = (int) (normalized * 255);
+                    } else {
+                        float intensity = -normalized;
+                        r = (int) (intensity * 255);
+                        g = (int) (intensity * 60);
+                        b = 0;
+                    }
                 }
 
                 pixels[idx] = (r << 16) | (g << 8) | b;
